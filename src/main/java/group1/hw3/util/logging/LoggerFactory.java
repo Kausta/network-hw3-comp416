@@ -1,9 +1,6 @@
 package group1.hw3.util.logging;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -47,7 +44,7 @@ public class LoggerFactory {
                 throw new IOException();
             }
             Files.readAllLines(Paths.get(filePath.toURI()))
-                .forEach(bannerLogger::i);
+                    .forEach(bannerLogger::i);
         } catch (IOException | URISyntaxException e) {
             bannerLogger.i("GROUP 1 PROJECT");
         }

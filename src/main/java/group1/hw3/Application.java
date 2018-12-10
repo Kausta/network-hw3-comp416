@@ -27,8 +27,8 @@ public class Application {
     private void initialize(String[] args) {
         logger.i("Starting distance vector routing program with arguments " + Arrays.toString(args));
         String fileName = args.length == 0 ? DEFAULT_INPUT_FILE_NAME : args[1];
-        if(!Files.exists(Paths.get(fileName))) {
-            if(DEFAULT_INPUT_FILE_NAME.equals(fileName)) {
+        if (!Files.exists(Paths.get(fileName))) {
+            if (DEFAULT_INPUT_FILE_NAME.equals(fileName)) {
                 logger.e("Cannot open default input file " + DEFAULT_INPUT_FILE_NAME + ", maybe you forgot to add it?");
                 throw new RuntimeException("Input file " + DEFAULT_INPUT_FILE_NAME + "not found");
             }
