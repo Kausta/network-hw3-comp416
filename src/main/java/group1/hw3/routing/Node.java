@@ -3,15 +3,24 @@ package group1.hw3.routing;
 import group1.hw3.util.error.NotImplementedException;
 
 import java.util.Hashtable;
+import java.util.Map;
 
 public class Node implements INode<Message> {
-    public Node(int nodeID, Hashtable<String, String> linkCost) {
-        throw new NotImplementedException();
+    private final String nodeID;
+
+    /**
+     * Node class containing node id and and each edge going from this node
+     *
+     * @param nodeID   Node id
+     * @param linkCost Link costs, in the form of Key: To, Value: Distance
+     */
+    public Node(int nodeID, Map<Integer, Integer> linkCost) {
+        this.nodeID = "" + nodeID;
     }
 
     @Override
     public String getClientID() {
-        throw new NotImplementedException();
+        return nodeID;
     }
 
     @Override

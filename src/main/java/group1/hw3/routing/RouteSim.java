@@ -1,14 +1,17 @@
 package group1.hw3.routing;
 
+import group1.hw3.util.Pair;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.Hashtable;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class RouteSim {
     private Logger logger = LoggerFactory.createLogger(getClass());
-    private Hashtable<String, INode<IMessage>> clients;
+    private Hashtable<String, INode<Message>> clients;
     private boolean atLeastOneClientIsUpdated = true;
     private int round = 0;
 
@@ -36,7 +39,7 @@ public class RouteSim {
     private void doOneIteration() {
         atLeastOneClientIsUpdated = false;
         for (String clientId : clients.keySet()) {
-            INode<IMessage> client = clients.get(clientId);
+            INode<Message> client = clients.get(clientId);
             if (client.sendUpdate()) {
                 atLeastOneClientIsUpdated = true;
             }
@@ -45,12 +48,19 @@ public class RouteSim {
 
     private void loadInitialDistances(Path inputFilePath) {
         clients = new Hashtable<>();
-        // TODO: Use inputFilePath to load clients
+        Map<Integer, InputNode> inputNodeData = new InputParser().parseInputFile(inputFilePath);
+        for (InputNode node : inputNodeData.values()) {
+            int nodeId = node.getNodeId();
+            Map<Integer, Integer> edges = node.getEdges().stream()
+                    .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+            INode<Message> clientNode = new Node(nodeId, edges);
+            clients.put(clientNode.getClientID(), clientNode);
+        }
     }
 
     private void printInitialData() {
         for (String clientId : clients.keySet()) {
-            INode<IMessage> client = clients.get(clientId);
+            INode<Message> client = clients.get(clientId);
             logger.i("Client " + clientId + " loaded.");
             Hashtable<String, String> forwardingTable = client.getForwardingTable();
             logger.d("Client's initial forwarding table: ");
