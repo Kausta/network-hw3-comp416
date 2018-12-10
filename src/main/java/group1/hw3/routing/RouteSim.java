@@ -1,18 +1,16 @@
 package group1.hw3.routing;
 
-import group1.hw3.routing.topology.Edge;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.Hashtable;
-import java.util.List;
 
 public class RouteSim {
     private Logger logger = LoggerFactory.createLogger(getClass());
     private Hashtable<String, INode<IMessage>> clients;
-    private Hashtable<String, List<Edge<String, Integer>>> topology;
     private boolean atLeastOneClientIsUpdated = true;
+    private int round = 0;
 
     /**
      * Initializes the route simulator using the given input file
@@ -24,35 +22,38 @@ public class RouteSim {
     }
 
     public void run() {
+        atLeastOneClientIsUpdated = true;
+        round = 0;
         while (atLeastOneClientIsUpdated) {
-            atLeastOneClientIsUpdated = false;
+            round += 1;
+            logger.d("Running round " + round);
             doOneIteration();
         }
+        logger.i("Distance Vector Routing Algorithm converged in " + round + " rounds.");
     }
 
     private void doOneIteration() {
-        for(String clientId: clients.keySet()) {
+        atLeastOneClientIsUpdated = false;
+        for (String clientId : clients.keySet()) {
             INode<IMessage> client = clients.get(clientId);
-            if (!client.sendUpdate()) {
-                continue;
+            if (client.sendUpdate()) {
+                atLeastOneClientIsUpdated = true;
             }
-
         }
     }
 
     private void loadInitialDistances(Path inputFilePath) {
         clients = new Hashtable<>();
-        topology = new Hashtable<>();
         // TODO: Use inputFilePath to load clients
     }
 
     private void printInitialData() {
-        for(String clientId: clients.keySet()) {
+        for (String clientId : clients.keySet()) {
             INode<IMessage> client = clients.get(clientId);
             logger.i("Client " + clientId + " loaded.");
             Hashtable<String, String> forwardingTable = client.getForwardingTable();
             logger.d("Client's initial forwarding table: ");
-            for(String destination: forwardingTable.keySet()) {
+            for (String destination : forwardingTable.keySet()) {
                 String target = forwardingTable.get(destination);
                 logger.d("Destination: " + destination + ", Forwarding Target: " + target);
             }
