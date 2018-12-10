@@ -1,5 +1,6 @@
 package group1.hw3.routing;
 
+import group1.hw3.routing.topology.Edge;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
 
@@ -9,6 +10,8 @@ import java.util.Hashtable;
 public class RouteSim {
     private Logger logger = LoggerFactory.createLogger(getClass());
     private Hashtable<String, INode<IMessage>> clients;
+    private Hashtable<String, Edge<String, Integer>> topology;
+    private boolean atLeastOneClientIsUpdated = true;
 
     /**
      * Initializes the route simulator using the given input file
@@ -20,11 +23,25 @@ public class RouteSim {
     }
 
     public void run() {
+        while (atLeastOneClientIsUpdated) {
+            atLeastOneClientIsUpdated = false;
+            doOneIteration();
+        }
+    }
 
+    private void doOneIteration() {
+        for(String clientId: clients.keySet()) {
+            INode<IMessage> client = clients.get(clientId);
+            if (!client.sendUpdate()) {
+                continue;
+            }
+
+        }
     }
 
     private void loadInitialDistances(Path inputFilePath) {
         clients = new Hashtable<>();
+        topology = new Hashtable<>();
         // TODO: Use inputFilePath to load clients
     }
 

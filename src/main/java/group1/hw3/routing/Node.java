@@ -20,7 +20,7 @@ public class Node implements INode<Message> {
     }
 
     @Override
-    public boolean selfUpdate() {
+    public boolean sendUpdate() {
         throw new NotImplementedException();
     }
 
