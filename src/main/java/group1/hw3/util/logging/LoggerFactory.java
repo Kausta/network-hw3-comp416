@@ -4,6 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class LoggerFactory {
     private static final String BANNER_FILE_NAME = "banner.txt";
@@ -34,17 +38,18 @@ public class LoggerFactory {
 
     public void printBanner(String bannerFileName) {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        InputStream fileStream = classloader.getResourceAsStream(bannerFileName);
+        URL filePath = classloader.getResource(bannerFileName);
 
         BannerLogger bannerLogger = new BannerLogger();
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(fileStream))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                bannerLogger.i(line);
+        try {
+            if (filePath == null) {
+                throw new IOException();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            Files.readAllLines(Paths.get(filePath.toURI()))
+                .forEach(bannerLogger::i);
+        } catch (IOException | URISyntaxException e) {
+            bannerLogger.i("GROUP 1 PROJECT");
         }
     }
 }
