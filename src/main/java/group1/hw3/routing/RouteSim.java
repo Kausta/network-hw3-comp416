@@ -6,11 +6,12 @@ import group1.hw3.util.logging.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.Hashtable;
+import java.util.List;
 
 public class RouteSim {
     private Logger logger = LoggerFactory.createLogger(getClass());
     private Hashtable<String, INode<IMessage>> clients;
-    private Hashtable<String, Edge<String, Integer>> topology;
+    private Hashtable<String, List<Edge<String, Integer>>> topology;
     private boolean atLeastOneClientIsUpdated = true;
 
     /**
