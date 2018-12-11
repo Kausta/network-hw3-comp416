@@ -1,5 +1,6 @@
 package group1.hw3;
 
+import group1.hw3.routing.MessageRouter;
 import group1.hw3.routing.RouteSim;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
@@ -42,6 +43,7 @@ public class Application {
     public void run() {
         logger.i("Running distance vector routing program");
         RouteSim routeSim = new RouteSim(inputFilePath);
+        MessageRouter.getInstance().init(routeSim);
         routeSim.run();
     }
 }

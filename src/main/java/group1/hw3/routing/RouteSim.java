@@ -30,10 +30,11 @@ public class RouteSim {
         round = 0;
         while (atLeastOneClientIsUpdated) {
             round += 1;
-            logger.d("Running round " + round);
+            logger.i("Running round " + round);
             doOneIteration();
         }
         logger.i("Distance Vector Routing Algorithm converged in " + round + " rounds.");
+        printInitialData();
     }
 
     private void doOneIteration() {
@@ -69,5 +70,11 @@ public class RouteSim {
                 logger.d("Destination: " + destination + ", Forwarding Target: " + target);
             }
         }
+    }
+
+    public void routeMessage(Message message) {
+        String targetNodeID = message.getReceiverID();
+        INode<Message> targetNode = clients.get(targetNodeID);
+        targetNode.receiveUpdate(message);
     }
 }

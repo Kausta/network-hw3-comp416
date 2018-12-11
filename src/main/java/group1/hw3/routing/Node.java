@@ -1,12 +1,16 @@
 package group1.hw3.routing;
 
-import group1.hw3.util.error.NotImplementedException;
-
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Node implements INode<Message> {
-    private final String nodeID;
+    private String nodeID;
+    private Map<String, Integer> linkCost = new HashMap<>();
+    private Hashtable<String, Integer> distanceTable = new Hashtable<>();
+    private Hashtable<String, String> forwardingTable = new Hashtable<>();
+    private boolean shouldUpdate = true;
 
     /**
      * Node class containing node id and and each edge going from this node
@@ -16,6 +20,14 @@ public class Node implements INode<Message> {
      */
     public Node(int nodeID, Map<Integer, Integer> linkCost) {
         this.nodeID = "" + nodeID;
+        this.linkCost.putAll(linkCost.keySet()
+                .stream()
+                .collect(Collectors.toMap(key -> "" + key, linkCost::get)));
+        this.distanceTable.putAll(this.linkCost);
+        this.distanceTable.put(this.nodeID, 0);
+        for (String key : distanceTable.keySet()) {
+            this.forwardingTable.put(key, key);
+        }
     }
 
     @Override
@@ -25,16 +37,44 @@ public class Node implements INode<Message> {
 
     @Override
     public void receiveUpdate(Message message) {
-        throw new NotImplementedException();
+        String senderID = message.getSenderID();
+        Hashtable<String, Integer> senderDistanceTable = message.getDistanceVectorEstimates();
+        int distanceToSender = distanceTable.get(senderID);
+
+        for (String target : senderDistanceTable.keySet()) {
+            int newDistance = senderDistanceTable.get(target);
+            if (!distanceTable.containsKey(target)) {
+                updateDistanceTo(target, newDistance, senderID);
+                continue;
+            }
+            int currDistance = distanceTable.get(target);
+            if (newDistance + distanceToSender < currDistance) {
+                updateDistanceTo(target, newDistance + distanceToSender, senderID);
+            }
+        }
+    }
+
+    private void updateDistanceTo(String target, int distance, String routeFrom) {
+        distanceTable.put(target, distance);
+        forwardingTable.put(target, routeFrom);
+        shouldUpdate = true;
     }
 
     @Override
     public boolean sendUpdate() {
-        throw new NotImplementedException();
+        if (shouldUpdate) {
+            for (String neighbor : linkCost.keySet()) {
+                Message message = new Message(nodeID, neighbor, distanceTable);
+                MessageRouter.getInstance().routeMessage(message);
+            }
+            shouldUpdate = false;
+            return true;
+        }
+        return false;
     }
 
     @Override
     public Hashtable<String, String> getForwardingTable() {
-        throw new NotImplementedException();
+        return forwardingTable;
     }
 }

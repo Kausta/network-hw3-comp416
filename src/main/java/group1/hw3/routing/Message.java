@@ -1,22 +1,30 @@
 package group1.hw3.routing;
 
-import group1.hw3.util.error.NotImplementedException;
-
 import java.util.Hashtable;
 
 public class Message implements IMessage {
+    private String senderID;
+    private String receiverID;
+    private Hashtable<String, Integer> distanceVectorEstimates;
+
+    public Message(String senderID, String receiverID, Hashtable<String, Integer> distanceVectorEstimates) {
+        this.senderID = senderID;
+        this.receiverID = receiverID;
+        this.distanceVectorEstimates = distanceVectorEstimates;
+    }
+
     @Override
     public String getSenderID() {
-        throw new NotImplementedException();
+        return senderID;
     }
 
     @Override
     public String getReceiverID() {
-        throw new NotImplementedException();
+        return receiverID;
     }
 
     @Override
     public Hashtable<String, Integer> getDistanceVectorEstimates() {
-        throw new NotImplementedException();
+        return distanceVectorEstimates;
     }
 }
