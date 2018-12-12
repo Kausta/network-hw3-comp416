@@ -5,14 +5,34 @@ import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Router simulator class
+ */
 public class RouteSim {
-    private Logger logger = LoggerFactory.createLogger(getClass());
-    private Hashtable<String, INode<Message>> clients;
+    /**
+     * Logger for the router simulator
+     */
+    private final Logger logger = LoggerFactory.createLogger(getClass());
+    /**
+     * Nodes contained in the network
+     */
+    private HashMap<String, INode<Message>> clients;
+    /**
+     * Immediate neighbors of each node in the network
+     */
+    private HashMap<String, Set<String>> neighbors;
+    /**
+     * Whether we had updated a node in the previous iteration
+     */
     private boolean atLeastOneClientIsUpdated = true;
+    /**
+     * How many iteration rounds we had
+     */
     private int round = 0;
 
     /**
@@ -25,6 +45,9 @@ public class RouteSim {
         this.printInitialData();
     }
 
+    /**
+     * Runs the algorithm loop
+     */
     public void run() {
         atLeastOneClientIsUpdated = true;
         round = 0;
@@ -34,9 +57,11 @@ public class RouteSim {
             doOneIteration();
         }
         logger.i("Distance Vector Routing Algorithm converged in " + round + " rounds.");
-        printInitialData();
     }
 
+    /**
+     * Performs one iteration of the algorithm
+     */
     private void doOneIteration() {
         atLeastOneClientIsUpdated = false;
         for (String clientId : clients.keySet()) {
@@ -47,23 +72,32 @@ public class RouteSim {
         }
     }
 
+    /**
+     * Loads the initial distances and network topology from the input file
+     * @param inputFilePath Input file  path
+     */
     private void loadInitialDistances(Path inputFilePath) {
-        clients = new Hashtable<>();
+        clients = new HashMap<>();
+        neighbors = new HashMap<>();
         Map<Integer, InputNode> inputNodeData = new InputParser().parseInputFile(inputFilePath);
         for (InputNode node : inputNodeData.values()) {
             int nodeId = node.getNodeId();
-            Map<Integer, Integer> edges = node.getEdges().stream()
-                    .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+            Map<String, Integer> edges = node.getEdges().stream()
+                    .collect(Collectors.toMap(pair -> "" + pair.getKey(), Pair::getValue));
             INode<Message> clientNode = new Node(nodeId, edges);
             clients.put(clientNode.getClientID(), clientNode);
+            neighbors.put(clientNode.getClientID(), edges.keySet());
         }
     }
 
+    /**
+     * Prints the initial forwarding table
+     */
     private void printInitialData() {
         for (String clientId : clients.keySet()) {
             INode<Message> client = clients.get(clientId);
             logger.i("Client " + clientId + " loaded.");
-            Hashtable<String, String> forwardingTable = client.getForwardingTable();
+            HashMap<String, String> forwardingTable = client.getForwardingTable();
             logger.d("Client's initial forwarding table: ");
             for (String destination : forwardingTable.keySet()) {
                 String target = forwardingTable.get(destination);
@@ -73,7 +107,11 @@ public class RouteSim {
     }
 
     public void routeMessage(Message message) {
+        String senderNodeID = message.getSenderID();
         String targetNodeID = message.getReceiverID();
+        if (!neighbors.get(senderNodeID).contains(targetNodeID)) {
+            throw new RuntimeException("Cannot send vector to non neighbor router");
+        }
         INode<Message> targetNode = clients.get(targetNodeID);
         targetNode.receiveUpdate(message);
     }

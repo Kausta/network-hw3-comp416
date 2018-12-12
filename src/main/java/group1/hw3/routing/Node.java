@@ -1,15 +1,31 @@
 package group1.hw3.routing;
 
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+/**
+ * Class for simulating a router node
+ */
 public class Node implements INode<Message> {
-    private String nodeID;
-    private Map<String, Integer> linkCost = new HashMap<>();
-    private Hashtable<String, Integer> distanceTable = new Hashtable<>();
-    private Hashtable<String, String> forwardingTable = new Hashtable<>();
+    /**
+     * Unique identifier of the node
+     */
+    private final String nodeID;
+    /**
+     * Link cost of the node to the immediate neighbors
+     */
+    private final HashMap<String, Integer> linkCost = new HashMap<>();
+    /**
+     * Distance vector of the node
+     */
+    private final HashMap<String, Integer> distanceTable = new HashMap<>();
+    /**
+     * Current forwarding table of the node
+     */
+    private final HashMap<String, String> forwardingTable = new HashMap<>();
+    /**
+     * Whether we should send an updates in the next iteration
+     */
     private boolean shouldUpdate = true;
 
     /**
@@ -18,11 +34,9 @@ public class Node implements INode<Message> {
      * @param nodeID   Node id
      * @param linkCost Link costs, in the form of Key: To, Value: Distance
      */
-    public Node(int nodeID, Map<Integer, Integer> linkCost) {
+    public Node(int nodeID, Map<String, Integer> linkCost) {
         this.nodeID = "" + nodeID;
-        this.linkCost.putAll(linkCost.keySet()
-                .stream()
-                .collect(Collectors.toMap(key -> "" + key, linkCost::get)));
+        this.linkCost.putAll(linkCost);
         this.distanceTable.putAll(this.linkCost);
         this.distanceTable.put(this.nodeID, 0);
         for (String key : distanceTable.keySet()) {
@@ -30,15 +44,21 @@ public class Node implements INode<Message> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getClientID() {
         return nodeID;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void receiveUpdate(Message message) {
         String senderID = message.getSenderID();
-        Hashtable<String, Integer> senderDistanceTable = message.getDistanceVectorEstimates();
+        HashMap<String, Integer> senderDistanceTable = message.getDistanceVectorEstimates();
         int distanceToSender = distanceTable.get(senderID);
 
         for (String target : senderDistanceTable.keySet()) {
@@ -54,12 +74,24 @@ public class Node implements INode<Message> {
         }
     }
 
+    /**
+     * Updates distance to the given node using the new distance and a new routing target
+     * <br />
+     * Also sets the should update flag
+     *
+     * @param target    Target node we need to send a packet to
+     * @param distance  New distance to the target node
+     * @param routeFrom The node that we used to obtain the new smallest distance
+     */
     private void updateDistanceTo(String target, int distance, String routeFrom) {
         distanceTable.put(target, distance);
         forwardingTable.put(target, routeFrom);
         shouldUpdate = true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean sendUpdate() {
         if (shouldUpdate) {
@@ -73,8 +105,11 @@ public class Node implements INode<Message> {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public Hashtable<String, String> getForwardingTable() {
+    public HashMap<String, String> getForwardingTable() {
         return forwardingTable;
     }
 }
