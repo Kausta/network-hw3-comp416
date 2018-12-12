@@ -120,6 +120,11 @@ public class Node implements INode<Message> {
         return forwardingTable;
     }
 
+    @Override
+    public HashMap<String, Integer> getDistanceVector() {
+        return distanceTable;
+    }
+
     /**
      * {@inheritDoc}
      */

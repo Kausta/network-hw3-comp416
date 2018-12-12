@@ -7,6 +7,7 @@ import group1.hw3.routing.io.LinkCost;
 import group1.hw3.util.Pair;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
+import group1.hw3.visualization.UpdateLinkFunction;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -57,13 +58,23 @@ public class RouteSim {
      * Runs the algorithm loop
      */
     public void run() {
+        // Run without callbacks
+        run(() -> {
+        }, () -> {
+        }, (from, to, edge) -> {
+        });
+    }
+
+    public void run(Runnable preIterationCallback, Runnable postIterationCallback, UpdateLinkFunction updateLinkCallback) {
         atLeastOneClientIsUpdated = true;
         round = 0;
         while (atLeastOneClientIsUpdated) {
             round += 1;
             logger.i("Running round " + round);
-            updateDynamicLinks();
+            preIterationCallback.run();
+            updateDynamicLinks(updateLinkCallback);
             doOneIteration();
+            postIterationCallback.run();
         }
         logger.i("Distance Vector Routing Algorithm converged in " + round + " rounds.");
     }
@@ -84,7 +95,7 @@ public class RouteSim {
     /**
      * Updates the dynamic links in the topology
      */
-    private void updateDynamicLinks() {
+    private void updateDynamicLinks(UpdateLinkFunction updateLinkCallback) {
         for (Pair<String, String> dynamicEdge : dynamicLinks.keySet()) {
             DynamicLink link = dynamicLinks.get(dynamicEdge);
             if (link.willLinkCostChange()) {
@@ -96,6 +107,7 @@ public class RouteSim {
                 INode<Message> client2 = clients.get(dynamicEdge.getValue());
                 client1.updateLinkCostTo(client2.getClientID(), link.getCost());
                 client2.updateLinkCostTo(client1.getClientID(), link.getCost());
+                updateLinkCallback.run(client1.getClientID(), client2.getClientID(), link.getCost());
             }
         }
     }
@@ -122,7 +134,7 @@ public class RouteSim {
                 if (!link.isStatic() && link instanceof DynamicLink) {
                     String clientId = clientNode.getClientID();
                     String targetId = "" + edge.getKey();
-                    if(dynamicLinks.containsKey(new Pair<>(targetId, clientId))) {
+                    if (dynamicLinks.containsKey(new Pair<>(targetId, clientId))) {
                         // Skip, since we already set the cost to random on the other direction and graph is symmetric
                         continue;
                     }
@@ -156,5 +168,21 @@ public class RouteSim {
         }
         INode<Message> targetNode = clients.get(targetNodeID);
         targetNode.receiveUpdate(message);
+    }
+
+    public HashMap<String, INode<Message>> getClients() {
+        return clients;
+    }
+
+    public HashMap<String, Set<String>> getNeighbors() {
+        return neighbors;
+    }
+
+    public HashMap<Pair<String, String>, DynamicLink> getDynamicLinks() {
+        return dynamicLinks;
+    }
+
+    public int getRound() {
+        return round;
     }
 }

@@ -32,6 +32,8 @@ public interface INode<T extends IMessage> {
      */
     HashMap<String, String> getForwardingTable();
 
+    HashMap<String, Integer> getDistanceVector();
+
     /**
      * Update the lint cost to the target node, for simulating dynamic links
      * @param target Target node, expected to be a neighbor

@@ -1,0 +1,26 @@
+node {
+    shape: circle;
+    fill-mode: plain;
+    fill-color: white;
+    stroke-mode: plain;
+    stroke-color: blue;
+    size: 60px;
+    text-alignment: center;
+}
+
+
+node:clicked {
+    stroke-color: red;
+}
+
+edge {
+    text-background-mode: rounded-box;
+    text-style: bold;
+    text-alignment: above;
+    text-size: 20px;
+    shape: cubic-curve;
+}
+
+edge.marked {
+   fill-color: red;
+}
