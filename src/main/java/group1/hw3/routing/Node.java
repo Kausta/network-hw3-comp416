@@ -1,5 +1,8 @@
 package group1.hw3.routing;
 
+import group1.hw3.util.logging.Logger;
+import group1.hw3.util.logging.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,6 +10,10 @@ import java.util.Map;
  * Class for simulating a router node
  */
 public class Node implements INode<Message> {
+    /**
+     * Logger for the node
+     */
+    private final Logger logger = LoggerFactory.createLogger(getClass());
     /**
      * Unique identifier of the node
      */
@@ -111,5 +118,22 @@ public class Node implements INode<Message> {
     @Override
     public HashMap<String, String> getForwardingTable() {
         return forwardingTable;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateLinkCostTo(String target, Integer newLinkCost) {
+        if (!linkCost.containsKey(target)) {
+            throw new RuntimeException("Cannot change the link cost to a non-neighbor node");
+        }
+        int prevCost = linkCost.get(target);
+        if (prevCost == newLinkCost) {
+            logger.w("Link cost didn't change, skipping");
+        }
+        linkCost.put(target, newLinkCost);
+        distanceTable.put(target, newLinkCost);
+        shouldUpdate = true;
     }
 }

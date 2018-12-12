@@ -1,5 +1,9 @@
 package group1.hw3.routing;
 
+import group1.hw3.routing.io.DynamicLink;
+import group1.hw3.routing.io.InputNode;
+import group1.hw3.routing.io.InputParser;
+import group1.hw3.routing.io.LinkCost;
 import group1.hw3.util.Pair;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
@@ -26,6 +30,10 @@ public class RouteSim {
      * Immediate neighbors of each node in the network
      */
     private HashMap<String, Set<String>> neighbors;
+    /**
+     * Dynamic cost links in the topology
+     */
+    private HashMap<Pair<String, String>, DynamicLink> dynamicLinks;
     /**
      * Whether we had updated a node in the previous iteration
      */
@@ -54,6 +62,7 @@ public class RouteSim {
         while (atLeastOneClientIsUpdated) {
             round += 1;
             logger.i("Running round " + round);
+            updateDynamicLinks();
             doOneIteration();
         }
         logger.i("Distance Vector Routing Algorithm converged in " + round + " rounds.");
@@ -73,20 +82,53 @@ public class RouteSim {
     }
 
     /**
+     * Updates the dynamic links in the topology
+     */
+    private void updateDynamicLinks() {
+        for (Pair<String, String> dynamicEdge : dynamicLinks.keySet()) {
+            DynamicLink link = dynamicLinks.get(dynamicEdge);
+            if (link.willLinkCostChange()) {
+                link.updateLinkCostRandomly();
+                logger.d("Updating dynamic link between "
+                        + dynamicEdge.getKey() + " - " + dynamicEdge.getValue()
+                        + ", new cost is " + link.getCost());
+                INode<Message> client1 = clients.get(dynamicEdge.getKey());
+                INode<Message> client2 = clients.get(dynamicEdge.getValue());
+                client1.updateLinkCostTo(client2.getClientID(), link.getCost());
+                client2.updateLinkCostTo(client1.getClientID(), link.getCost());
+            }
+        }
+    }
+
+    /**
      * Loads the initial distances and network topology from the input file
+     *
      * @param inputFilePath Input file  path
      */
     private void loadInitialDistances(Path inputFilePath) {
         clients = new HashMap<>();
         neighbors = new HashMap<>();
+        dynamicLinks = new HashMap<>();
         Map<Integer, InputNode> inputNodeData = new InputParser().parseInputFile(inputFilePath);
         for (InputNode node : inputNodeData.values()) {
             int nodeId = node.getNodeId();
             Map<String, Integer> edges = node.getEdges().stream()
-                    .collect(Collectors.toMap(pair -> "" + pair.getKey(), Pair::getValue));
+                    .collect(Collectors.toMap(pair -> "" + pair.getKey(), pair -> pair.getValue().getCost()));
             INode<Message> clientNode = new Node(nodeId, edges);
             clients.put(clientNode.getClientID(), clientNode);
             neighbors.put(clientNode.getClientID(), edges.keySet());
+            for (Pair<Integer, LinkCost> edge : node.getEdges()) {
+                LinkCost link = edge.getValue();
+                if (!link.isStatic() && link instanceof DynamicLink) {
+                    String clientId = clientNode.getClientID();
+                    String targetId = "" + edge.getKey();
+                    if(dynamicLinks.containsKey(new Pair<>(targetId, clientId))) {
+                        // Skip, since we already set the cost to random on the other direction and graph is symmetric
+                        continue;
+                    }
+                    dynamicLinks.put(new Pair<>(clientId, targetId), (DynamicLink) link);
+                }
+            }
         }
     }
 

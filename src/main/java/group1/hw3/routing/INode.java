@@ -31,4 +31,11 @@ public interface INode<T extends IMessage> {
      * @return the forwarding table of the current node
      */
     HashMap<String, String> getForwardingTable();
+
+    /**
+     * Update the lint cost to the target node, for simulating dynamic links
+     * @param target Target node, expected to be a neighbor
+     * @param newLinkCost The new link cost
+     */
+    void updateLinkCostTo(String target, Integer newLinkCost);
 }
