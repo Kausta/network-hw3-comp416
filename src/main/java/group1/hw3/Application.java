@@ -4,6 +4,7 @@ import group1.hw3.routing.MessageRouter;
 import group1.hw3.routing.RouteSim;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
+import group1.hw3.visualization.RouteSimVisualizer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ public class Application {
 
     /**
      * Creates the application with given arguments
+     *
      * @param args The command line arguments
      */
     public Application(String[] args) {
@@ -40,6 +42,7 @@ public class Application {
     /**
      * Main entry point function for the application,
      * creates the application with the args and runs it
+     *
      * @param args Command line arguments
      */
     public static void main(String[] args) {
@@ -49,6 +52,7 @@ public class Application {
 
     /**
      * Parses the arguments to initialize the application
+     *
      * @param args Command line arguments
      */
     private void initialize(String[] args) {
@@ -73,6 +77,9 @@ public class Application {
         logger.i("Running distance vector routing program");
         RouteSim routeSim = new RouteSim(inputFilePath);
         MessageRouter.getInstance().init(routeSim);
-        routeSim.run();
+
+        RouteSimVisualizer visualizer = new RouteSimVisualizer(routeSim);
+        routeSim.run(visualizer::preIterationCallback, visualizer::postIterationCallback, visualizer::performLinkCostChange);
+        visualizer.algorithmFinished();
     }
 }

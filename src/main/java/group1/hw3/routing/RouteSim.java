@@ -1,8 +1,13 @@
 package group1.hw3.routing;
 
+import group1.hw3.routing.io.DynamicLink;
+import group1.hw3.routing.io.InputNode;
+import group1.hw3.routing.io.InputParser;
+import group1.hw3.routing.io.LinkCost;
 import group1.hw3.util.Pair;
 import group1.hw3.util.logging.Logger;
 import group1.hw3.util.logging.LoggerFactory;
+import group1.hw3.visualization.UpdateLinkFunction;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -21,15 +26,15 @@ public class RouteSim {
     /**
      * Nodes contained in the network
      */
-    private HashMap<String, INode<Message>> clients;
+    private HashMap<Integer, INode<Message>> clients;
     /**
      * Immediate neighbors of each node in the network
      */
-    private HashMap<String, Set<String>> neighbors;
+    private HashMap<Integer, Set<Integer>> neighbors;
     /**
-     * Whether we had updated a node in the previous iteration
+     * Dynamic cost links in the topology
      */
-    private boolean atLeastOneClientIsUpdated = true;
+    private HashMap<Pair<Integer, Integer>, DynamicLink> dynamicLinks;
     /**
      * How many iteration rounds we had
      */
@@ -49,44 +54,98 @@ public class RouteSim {
      * Runs the algorithm loop
      */
     public void run() {
-        atLeastOneClientIsUpdated = true;
+        // Run without callbacks
+        run(() -> {
+        }, () -> {
+        }, (from, to, edge) -> {
+        });
+    }
+
+    public void run(Runnable preIterationCallback, Runnable postIterationCallback, UpdateLinkFunction updateLinkCallback) {
         round = 0;
-        while (atLeastOneClientIsUpdated) {
+        while (true) {
             round += 1;
             logger.i("Running round " + round);
-            doOneIteration();
+            preIterationCallback.run();
+            updateDynamicLinks(updateLinkCallback);
+            boolean updated = doOneIteration();
+            postIterationCallback.run();
+            if(!updated) {
+                break;
+            }
         }
         logger.i("Distance Vector Routing Algorithm converged in " + round + " rounds.");
+        for (INode<Message> node : clients.values()) {
+            logger.i(node.toString());
+        }
     }
 
     /**
      * Performs one iteration of the algorithm
      */
-    private void doOneIteration() {
-        atLeastOneClientIsUpdated = false;
-        for (String clientId : clients.keySet()) {
+    private boolean doOneIteration() {
+        boolean updated = false;
+        for (int clientId : clients.keySet()) {
             INode<Message> client = clients.get(clientId);
             if (client.sendUpdate()) {
-                atLeastOneClientIsUpdated = true;
+                updated = true;
+                logger.d("Updated  " + clientId);
+            } else {
+                logger.d("Not updated " + clientId);
+            }
+        }
+        return updated;
+    }
+
+    /**
+     * Updates the dynamic links in the topology
+     */
+    private void updateDynamicLinks(UpdateLinkFunction updateLinkCallback) {
+        for (Pair<Integer, Integer> dynamicEdge : dynamicLinks.keySet()) {
+            DynamicLink link = dynamicLinks.get(dynamicEdge);
+            if (link.willLinkCostChange()) {
+                link.updateLinkCostRandomly();
+                logger.d("Updating dynamic link between "
+                        + dynamicEdge.getKey() + " - " + dynamicEdge.getValue()
+                        + ", new cost is " + link.getCost());
+                INode<Message> client1 = clients.get(dynamicEdge.getKey());
+                INode<Message> client2 = clients.get(dynamicEdge.getValue());
+                client1.updateLinkCostTo(client2.getNodeId(), link.getCost());
+                client2.updateLinkCostTo(client1.getNodeId(), link.getCost());
+                updateLinkCallback.run("" + client1.getNodeId(), "" + client2.getNodeId(), link.getCost());
             }
         }
     }
 
     /**
      * Loads the initial distances and network topology from the input file
+     *
      * @param inputFilePath Input file  path
      */
     private void loadInitialDistances(Path inputFilePath) {
         clients = new HashMap<>();
         neighbors = new HashMap<>();
+        dynamicLinks = new HashMap<>();
         Map<Integer, InputNode> inputNodeData = new InputParser().parseInputFile(inputFilePath);
         for (InputNode node : inputNodeData.values()) {
             int nodeId = node.getNodeId();
-            Map<String, Integer> edges = node.getEdges().stream()
-                    .collect(Collectors.toMap(pair -> "" + pair.getKey(), Pair::getValue));
+            Map<Integer, Integer> edges = node.getEdges().stream()
+                    .collect(Collectors.toMap(Pair::getKey, pair -> pair.getValue().getCost()));
             INode<Message> clientNode = new Node(nodeId, edges);
-            clients.put(clientNode.getClientID(), clientNode);
-            neighbors.put(clientNode.getClientID(), edges.keySet());
+            clients.put(clientNode.getNodeId(), clientNode);
+            neighbors.put(clientNode.getNodeId(), edges.keySet());
+            for (Pair<Integer, LinkCost> edge : node.getEdges()) {
+                LinkCost link = edge.getValue();
+                if (!link.isStatic() && link instanceof DynamicLink) {
+                    int clientId = clientNode.getNodeId();
+                    int targetId = edge.getKey();
+                    if (dynamicLinks.containsKey(new Pair<>(targetId, clientId))) {
+                        // Skip, since we already set the cost to random on the other direction and graph is symmetric
+                        continue;
+                    }
+                    dynamicLinks.put(new Pair<>(clientId, targetId), (DynamicLink) link);
+                }
+            }
         }
     }
 
@@ -94,7 +153,7 @@ public class RouteSim {
      * Prints the initial forwarding table
      */
     private void printInitialData() {
-        for (String clientId : clients.keySet()) {
+        for (int clientId : clients.keySet()) {
             INode<Message> client = clients.get(clientId);
             logger.i("Client " + clientId + " loaded.");
             HashMap<String, String> forwardingTable = client.getForwardingTable();
@@ -107,12 +166,28 @@ public class RouteSim {
     }
 
     public void routeMessage(Message message) {
-        String senderNodeID = message.getSenderID();
-        String targetNodeID = message.getReceiverID();
+        int senderNodeID = message.getSenderID();
+        int targetNodeID = message.getReceiverID();
         if (!neighbors.get(senderNodeID).contains(targetNodeID)) {
             throw new RuntimeException("Cannot send vector to non neighbor router");
         }
         INode<Message> targetNode = clients.get(targetNodeID);
         targetNode.receiveUpdate(message);
+    }
+
+    public HashMap<Integer, INode<Message>> getClients() {
+        return clients;
+    }
+
+    public HashMap<Integer, Set<Integer>> getNeighbors() {
+        return neighbors;
+    }
+
+    public HashMap<Pair<Integer, Integer>, DynamicLink> getDynamicLinks() {
+        return dynamicLinks;
+    }
+
+    public int getRound() {
+        return round;
     }
 }

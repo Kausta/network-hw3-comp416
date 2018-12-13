@@ -11,17 +11,17 @@ public interface IMessage {
      * Sender id of the message
      * @return the sender id of the message
      */
-    String getSenderID();
+    int getSenderID();
 
     /**
      * Receiver id of the message
      * @return the receiver id of the message
      */
-    String getReceiverID();
+    int getReceiverID();
 
     /**
      * New distance vector of the sender
      * @return the new distance vector of the sender
      */
-    HashMap<String, Integer> getDistanceVectorEstimates();
+    HashMap<Integer, Integer> getDistanceVectorEstimates();
 }
