@@ -45,7 +45,7 @@ public class RouteSimVisualizer {
         // graph.resume();
         try {
             forwardingTableVisualizer.updateGraph();
-            Thread.sleep(1);
+            Thread.sleep(100);
         } catch (InterruptedException ignored) {
 
         }
