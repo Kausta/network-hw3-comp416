@@ -9,29 +9,32 @@ import java.util.HashMap;
 public class RouteSimVisualizer {
     private final RouteSim simulator;
     private final GraphStreamGraph graph;
+    private final ForwardingTableVisualizer forwardingTableVisualizer;
 
     public RouteSimVisualizer(RouteSim routeSim) {
         this.simulator = routeSim;
         this.graph = new GraphStreamGraph();
+        this.forwardingTableVisualizer = new ForwardingTableVisualizer(this, graph);
         this.initializeGraph();
     }
 
     private void initializeGraph() {
-        HashMap<String, INode<Message>> nodes = simulator.getClients();
-        for (String node : nodes.keySet()) {
-            graph.addNode(node);
+        HashMap<Integer, INode<Message>> nodes = simulator.getClients();
+        for (int node : nodes.keySet()) {
+            graph.addNode("" + node);
             INode<Message> nodeImpl = nodes.get(node);
-            HashMap<String, Integer> connections = nodeImpl.getDistanceVector();
-            for (String target : connections.keySet()) {
-                if (node.equals(target)) {
+            HashMap<Integer, Integer> connections = nodeImpl.getDistanceVector();
+            for (int target : connections.keySet()) {
+                if (node == target) {
                     continue;
                 }
                 int cost = connections.get(target);
-                graph.addNode(target);
-                graph.addEdge(node, target, cost);
+                graph.addNode("" + target);
+                graph.addEdge("" + node, "" + target, cost);
             }
         }
         graph.display();
+        graph.addPropertyChangeListener(forwardingTableVisualizer);
     }
 
     public void preIterationCallback() {
@@ -41,7 +44,8 @@ public class RouteSimVisualizer {
     public void postIterationCallback() {
         // graph.resume();
         try {
-            Thread.sleep(500);
+            forwardingTableVisualizer.updateGraph();
+            Thread.sleep(1);
         } catch (InterruptedException ignored) {
 
         }
@@ -52,17 +56,10 @@ public class RouteSimVisualizer {
     }
 
     public void algorithmFinished() {
-        HashMap<String, INode<Message>> nodes = simulator.getClients();
-        for (String node : nodes.keySet()) {
-            INode<Message> nodeImpl = nodes.get(node);
-            HashMap<String, String> forwardingTable = nodeImpl.getForwardingTable();
-            for (String target : forwardingTable.keySet()) {
-                if (node.equals(target)) {
-                    continue;
-                }
-                String forwardBy = forwardingTable.get(target);
-                graph.markEdge(node, forwardBy);
-            }
-        }
+
+    }
+
+    public RouteSim getSimulator() {
+        return simulator;
     }
 }

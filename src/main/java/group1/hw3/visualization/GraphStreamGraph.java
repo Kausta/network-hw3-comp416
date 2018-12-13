@@ -6,11 +6,21 @@ import org.graphstream.graph.Edge;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.graphstream.ui.view.Viewer;
+import org.graphstream.ui.view.ViewerListener;
+import org.graphstream.ui.view.ViewerPipe;
 
-public class GraphStreamGraph {
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.util.Objects;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+public class GraphStreamGraph implements ViewerListener {
     private final Logger logger = LoggerFactory.createLogger(getClass());
+    private final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+    private final PropertyChangeSupport support = new PropertyChangeSupport(this);
     private SingleGraph graphImpl;
     private Viewer viewer = null;
+    private boolean viewOpen = false;
 
     public GraphStreamGraph() {
         this.init();
@@ -22,14 +32,18 @@ public class GraphStreamGraph {
 
         graphImpl = new SingleGraph("Distance Vector Graph");
 
-        String filePath = Thread.currentThread().getContextClassLoader().getResource("stylesheet.css").toExternalForm();
+        String filePath = Objects.requireNonNull(
+                Thread.currentThread()
+                        .getContextClassLoader()
+                        .getResource("stylesheet.css"))
+                .toExternalForm();
         graphImpl.addAttribute("ui.stylesheet", "url(" + filePath + ")");
         graphImpl.addAttribute("ui.antialias", true);
         graphImpl.addAttribute("ui.quality", true);
     }
 
     public void addNode(String nodeName) {
-        if(graphImpl.getNode(nodeName) != null) {
+        if (graphImpl.getNode(nodeName) != null) {
             return;
         }
         Node node = graphImpl.addNode(nodeName);
@@ -37,7 +51,7 @@ public class GraphStreamGraph {
     }
 
     public void addEdge(String edgeFrom, String edgeTo, int initialCost) {
-        if(graphImpl.getEdge(edgeFrom + "|" + edgeTo) != null || graphImpl.getEdge(edgeTo + "|" + edgeFrom) != null) {
+        if (graphImpl.getEdge(edgeFrom + "|" + edgeTo) != null || graphImpl.getEdge(edgeTo + "|" + edgeFrom) != null) {
             return;
         }
         Edge edge = graphImpl.addEdge(edgeFrom + "|" + edgeTo, edgeFrom, edgeTo);
@@ -46,11 +60,11 @@ public class GraphStreamGraph {
 
     private Edge getEdge(String edgeFrom, String edgeTo) {
         Edge edge = graphImpl.getEdge(edgeFrom + "|" + edgeTo);
-        if(edge == null) {
+        if (edge == null) {
             edge = graphImpl.getEdge(edgeTo + "|" + edgeFrom);
         }
-        if(edge == null) {
-            throw new RuntimeException("Please add the edge first to retrieve it");
+        if (edge == null) {
+            throw new RuntimeException("Please add the edge first to retrieve it: " + edgeFrom + " -> " + edgeTo);
         }
         return edge;
     }
@@ -65,21 +79,68 @@ public class GraphStreamGraph {
         edge.setAttribute("ui.class", "marked");
     }
 
+    public void removeAllMarks() {
+        graphImpl.getEachEdge()
+                .forEach(edge -> edge.removeAttribute("ui.class"));
+    }
+
     public void display() {
         viewer = graphImpl.display();
+        viewOpen = true;
+        this.addListener();
+    }
+
+    private void addListener() {
+        if (viewer == null) {
+            return;
+        }
+
+        final ViewerPipe pipe = viewer.newViewerPipe();
+        pipe.addViewerListener(this);
+        pipe.addSink(graphImpl);
+        executor.execute(() -> {
+            while (viewOpen) {
+                try {
+                    pipe.blockingPump();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        });
     }
 
     public void pause() {
-        if(viewer == null) {
+        if (viewer == null) {
             return;
         }
         viewer.disableAutoLayout();
     }
 
     public void resume() {
-        if(viewer == null) {
+        if (viewer == null) {
             return;
         }
         viewer.enableAutoLayout();
+    }
+
+    public void addPropertyChangeListener(PropertyChangeListener listener) {
+        this.support.addPropertyChangeListener(listener);
+    }
+
+    public void removePropertyChangeListener(PropertyChangeListener listener) {
+        this.support.removePropertyChangeListener(listener);
+    }
+
+    @Override
+    public void viewClosed(String viewName) {
+        viewOpen = false;
+    }
+
+    @Override
+    public void buttonPushed(String id) {
+        this.support.firePropertyChange("mouseClick", "", id);
+    }
+
+    @Override
+    public void buttonReleased(String id) {
     }
 }

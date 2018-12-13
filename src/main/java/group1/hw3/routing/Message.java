@@ -9,15 +9,15 @@ public class Message implements IMessage {
     /**
      * Sender id of the message
      */
-    private final String senderID;
+    private final int senderID;
     /**
      * Receiver id of the message
      */
-    private final String receiverID;
+    private final int receiverID;
     /**
      * New distance vector of the sender
      */
-    private final HashMap<String, Integer> distanceVectorEstimates = new HashMap<>();
+    private final HashMap<Integer, Integer> distanceVectorEstimates = new HashMap<>();
 
     /**
      * Constructor for the distance vector message
@@ -26,7 +26,7 @@ public class Message implements IMessage {
      * @param receiverID              Receiver of the message
      * @param distanceVectorEstimates Distance vector of the sender
      */
-    public Message(String senderID, String receiverID, HashMap<String, Integer> distanceVectorEstimates) {
+    public Message(int senderID, int receiverID, HashMap<Integer, Integer> distanceVectorEstimates) {
         this.senderID = senderID;
         this.receiverID = receiverID;
         this.distanceVectorEstimates.putAll(distanceVectorEstimates);
@@ -36,7 +36,7 @@ public class Message implements IMessage {
      * {@inheritDoc}
      */
     @Override
-    public String getSenderID() {
+    public int getSenderID() {
         return senderID;
     }
 
@@ -44,7 +44,7 @@ public class Message implements IMessage {
      * {@inheritDoc}
      */
     @Override
-    public String getReceiverID() {
+    public int getReceiverID() {
         return receiverID;
     }
 
@@ -52,7 +52,7 @@ public class Message implements IMessage {
      * {@inheritDoc}
      */
     @Override
-    public HashMap<String, Integer> getDistanceVectorEstimates() {
+    public HashMap<Integer, Integer> getDistanceVectorEstimates() {
         return distanceVectorEstimates;
     }
 }

@@ -12,7 +12,7 @@ public interface INode<T extends IMessage> {
      * Get the unique client identifier for the node
      * @return Client identifier
      */
-    String getClientID();
+    int getNodeId();
 
     /**
      * Update the node with the given message
@@ -32,12 +32,12 @@ public interface INode<T extends IMessage> {
      */
     HashMap<String, String> getForwardingTable();
 
-    HashMap<String, Integer> getDistanceVector();
+    HashMap<Integer, Integer> getDistanceVector();
 
     /**
      * Update the lint cost to the target node, for simulating dynamic links
      * @param target Target node, expected to be a neighbor
      * @param newLinkCost The new link cost
      */
-    void updateLinkCostTo(String target, Integer newLinkCost);
+    void updateLinkCostTo(Integer target, Integer newLinkCost);
 }
