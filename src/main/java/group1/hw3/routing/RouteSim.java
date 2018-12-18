@@ -75,8 +75,13 @@ public class RouteSim {
             }
         }
         logger.i("Distance Vector Routing Algorithm converged in " + round + " rounds.");
+        logger.i("Presenting Distance Table");
         for (INode<Message> node : clients.values()) {
             logger.i(node.toString());
+        }
+        logger.i("Presenting Forwardimg Table");
+        for (INode<Message> node : clients.values()) {
+            logger.i(node.forwardToString());
         }
     }
 

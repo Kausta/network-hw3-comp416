@@ -40,4 +40,5 @@ public interface INode<T extends IMessage> {
      * @param newLinkCost The new link cost
      */
     void updateLinkCostTo(Integer target, Integer newLinkCost);
+    String forwardToString();
 }

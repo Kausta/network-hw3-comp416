@@ -195,4 +195,16 @@ public class Node implements INode<Message> {
         }
         return builder.toString();
     }
+
+    public String forwardToString() {
+        StringBuilder builder = new StringBuilder();
+        for (String target : forwardingTable.keySet()) {
+            builder.append("[")
+                    .append(target)
+                    .append(" -> ")
+                    .append(forwardingTable.get(target))
+                    .append("] ");
+        }
+        return "Node " + this.nodeID + "\n" + builder.toString() + "\n";
+    }
 }
