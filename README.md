@@ -2,6 +2,10 @@
 
 - Project 3 for KU Fall 2018 Network Lecture
 
+## REPORT
+
+[Report](https://github.com/nberktumer/network-hw3-comp416/blob/master/documents/Fall%202018_COMP416_Project3_RouteSim.pdf)
+
 ## LICENSE
 
 Copyright [2018] Authors
